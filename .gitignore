@@ -225,3 +225,5 @@ __marimo__/
 
 # Node.js 
 node_module/
+
+.idea/
