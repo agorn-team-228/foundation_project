@@ -1,6 +1,21 @@
 import React from 'react';
 
 export default function Sidebar({ isDarkMode, setIsDarkMode }) {
+  // Функция для показа информации о "Праве"
+  const handleShowInfo = (e) => {
+    e.preventDefault(); // Предотвращаем переход по ссылке #
+    alert(
+      '⚖️ КАК РАБОТАЕТ «ПРАВО»\n\n' +
+      'Этот ассистент создан для юристов ПСБ. Его главная особенность — строгая работа с фактами.\n\n' +
+      '• Отвечает ТОЛЬКО на основе базы нормативных актов и регламентов банка\n' +
+      '• Каждый ответ содержит ссылки на конкретные пункты документов\n' +
+      '• Если информации недостаточно — честно сообщает об этом\n' +
+      '• Учитывает даты редакций документов\n' +
+      '• Не дает советов по противоправным действиям\n\n' +
+      'Технология: RAG + LLM DeepSeek V4.1'
+    );
+  };
+
   return (
     <aside className="w-[260px] bg-[#f8fafc] dark:bg-gray-950 border-r border-slate-200 dark:border-gray-800 flex flex-col justify-between p-4 flex-shrink-0">
       
@@ -65,8 +80,12 @@ export default function Sidebar({ isDarkMode, setIsDarkMode }) {
           </button>
         </div>
 
-        {/* Ссылка на доку */}
-        <a href="#" className="flex items-center gap-2 text-xs text-slate-500 dark:text-gray-400 hover:text-slate-800 dark:hover:text-white transition-colors">
+        {/* Ссылка "Как работает Право" - ТЕПЕРЬ С РАБОЧИМ ALERT */}
+        <a 
+          href="#" 
+          onClick={handleShowInfo}
+          className="flex items-center gap-2 text-xs text-slate-500 dark:text-gray-400 hover:text-slate-800 dark:hover:text-white transition-colors"
+        >
           <span>❓</span> Как работает Право
         </a>
       </div>
