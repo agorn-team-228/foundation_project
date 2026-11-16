@@ -4,11 +4,12 @@ import ChatHeader from './components/ChatHeader';
 import ChatMessages from './components/ChatMessages';
 import ChatInput from './components/ChatInput';
 import SourceViewer from './components/SourceViewer';
-import { mockDocuments } from './data/mockDocuments';
 
 export default function App() {
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [selectedSource, setSelectedSource] = useState(null); // { document, highlightHeader }
+  const API = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+  const [sourceRefs, setSourceRefs] = useState([]);
 
   const [messages, setMessages] = useState([
     {
@@ -32,35 +33,37 @@ export default function App() {
     }
   ]);
 
-  const handleSendMessage = (text) => {
+  const handleSendMessage = async (text) => {
     const timeNow = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const newUserMessage = { id: Date.now(), sender: 'user', time: timeNow, text: text };
-    setMessages(prev => [...prev, newUserMessage]);
-
-    setTimeout(() => {
-      const newAiMessage = {
-        id: Date.now() + 1,
-        sender: 'ai',
-        time: timeNow,
-        verdict: 'Принято. Я анализирую ваш запрос...',
-        intro: `Вы спросили: "${text}". Сейчас этот фронтенд готов к интеграции с бэкендом.`,
-        steps: [],
-        prompt: 'Бэкендер может подключить контроллер к этому состоянию.'
-      };
-      setMessages(prev => [...prev, newAiMessage]);
-    }, 1000);
+    const history = messages.slice(-6);
+    setMessages(prev => [...prev, { id: Date.now(), sender: 'user', time: timeNow, text }]);
+    try {
+      const res = await fetch(API + '/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text, history })
+      });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      setMessages(prev => [...prev, { id: Date.now() + 1, sender: 'ai', time: timeNow, verdict: data.verdict, intro: data.intro, steps: data.steps || [], prompt: data.prompt }]);
+      setSourceRefs(data.sources || []);
+    } catch (e) {
+      setMessages(prev => [...prev, { id: Date.now() + 1, sender: 'ai', time: timeNow, verdict: 'Нет связи с сервером', intro: String(e), steps: [], prompt: '' }]);
+      setSourceRefs([]);
+    }
   };
 
-  // Демо-ссылки на источники (имитируют то, что бэкенд вернёт в поле sources)
-  const sourceRefs = [
-    { docId: 'doc-1', header: 'Раздел 4. Обеспечительный платёж > п. 4.4', label: 'Договор № А-12/2025, п. 4.4' },
-    { docId: 'doc-1', header: 'Раздел 4. Обеспечительный платёж > п. 4.3', label: 'Договор № А-12/2025, п. 4.3' },
-    { docId: 'doc-2', header: 'Статья 687. Расторжение договора найма', label: 'ГК РФ, ст. 687' },
-  ];
 
-  const openSource = (ref) => {
-    const document = mockDocuments.find(d => d.id === ref.docId);
-    setSelectedSource({ document, highlightHeader: ref.header });
+
+  const openSource = async (ref) => {
+    try {
+      const res = await fetch(API + '/api/documents/' + ref.docId);
+      if (!res.ok) throw new Error('not found');
+      const document = await res.json();
+      setSelectedSource({ document, highlightHeader: ref.header });
+    } catch (e) {
+      alert('Не удалось загрузить документ');
+    }
   };
 
   return (
